@@ -1,0 +1,117 @@
+#include <Arduino.h>
+#include <U8g2lib.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <string>
+
+#define led_pin 12
+U8G2_SSD1306_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, 21, 15, U8X8_PIN_NONE);
+
+
+const char *ssid = "qqqq";
+const char *password = "cmcccmcc";
+const String url = "https://v2.jokeapi.dev/joke/Programming";
+
+
+void displayText(char *str) {
+    u8g2.clearBuffer();
+    /* 将字符串显示在屏幕中央 */
+    u8g2.drawUTF8(u8g2.getDisplayWidth() / 2 - u8g2.getUTF8Width(str) / 2,
+                  u8g2.getDisplayHeight() / 2 + u8g2.getMaxCharHeight() / 2, str);
+
+    u8g2.sendBuffer();
+}
+
+void display(const char *str) {
+    Serial.println(str);
+    u8g2.clearBuffer();
+    u8g2.drawStr(0,15,str);
+//    int length = str.length();
+//    if (length > 15) {
+//        int lines = length / 15;
+//        for (int i = 0; i < lines; i++) {
+//            u8g2.setCursor(0, i*30);
+//            u8g2.print(str[30*i,30*i+30]);
+//        }
+//    }else{
+//        u8g2.setCursor(0, 0);
+        u8g2.println(str);
+//    }
+    u8g2.sendBuffer();
+}
+
+void displayWelcome() {
+    char *str = "正在启动...";
+    displayText(str);
+}
+
+String getJoke() {
+    HTTPClient http;
+    http.useHTTP10(true);
+    http.begin(url);
+    http.GET();
+    String result = http.getString();
+
+    DynamicJsonDocument doc(2048);
+    DeserializationError error = deserializeJson(doc, result);
+
+    // Test if parsing succeeds.
+    if (error) {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+        return "<error>";
+    }
+
+    String type = doc["type"].as<String>();
+    String joke = doc["joke"].as<String>();
+    String setup = doc["setup"].as<String>();
+    String delivery = doc["delivery"].as<String>();
+    http.end();
+    return type.equals("single") ? joke : setup + "  " + delivery;
+}
+
+void nextJoke() {
+    u8g2.clearBuffer();
+    u8g2.setCursor(0, 10);
+    u8g2.println("\nLoading joke...");
+
+    String joke = getJoke();
+    u8g2.clearDisplay();
+    display(joke.c_str());
+    u8g2.sendBuffer();
+}
+
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(led_pin, OUTPUT);
+    digitalWrite(led_pin, HIGH);
+    u8g2.setFont(u8g2_font_wqy12_t_gb2312);
+    u8g2.begin();
+    u8g2.enableUTF8Print();
+    displayWelcome();/* 显示欢迎语，可去除 */
+
+
+    WiFi.begin(ssid, password, 6);
+    u8g2.clearBuffer();
+    while (WiFiClass::status() != WL_CONNECTED) {
+        delay(100);
+        Serial.println("正在等待wifi");
+        u8g2.print(".");
+        u8g2.sendBuffer();
+    }
+    char str[50];
+    sprintf(str, "IP:%s", WiFi.localIP().toString().c_str());
+    display(str);
+    Serial.printf("WIFI 地址：%s",WiFi.localIP().toString().c_str());
+
+    delay(3000);
+    nextJoke();
+
+
+}
+
+void loop() {
+}
+

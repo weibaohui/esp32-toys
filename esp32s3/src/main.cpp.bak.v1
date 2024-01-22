@@ -1,0 +1,91 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+#define led_pin 12
+
+Adafruit_SSD1306 display = Adafruit_SSD1306(128, 64,&Wire);
+
+
+const char *ssid = "qqm";
+const char *password = "cmcccmccc";
+const String url = "https://v2.jokeapi.dev/joke/Programming";
+
+void displayWelcome() {
+    char *str = "start...";
+    display.println(str);
+}
+
+String getJoke() {
+    HTTPClient http;
+    http.useHTTP10(true);
+    http.begin(url);
+    http.GET();
+    String result = http.getString();
+
+    DynamicJsonDocument doc(2048);
+    DeserializationError error = deserializeJson(doc, result);
+
+    // Test if parsing succeeds.
+    if (error) {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+        return "<error>";
+    }
+
+    String type = doc["type"].as<String>();
+    String joke = doc["joke"].as<String>();
+    String setup = doc["setup"].as<String>();
+    String delivery = doc["delivery"].as<String>();
+    http.end();
+    return type.equals("single") ? joke : setup + "  " + delivery;
+}
+
+void nextJoke() {
+    String joke = getJoke();
+    display.println(joke.c_str());
+}
+
+
+void setup() {
+    Wire.begin(/*SDA*/15,/*SCL*/21);
+    Serial.begin(115200);
+    if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c,false,false)) {
+        Serial.println(F("SSD1306 allocation failed"));
+        for(;;); // Don't proceed, loop forever
+    }
+
+
+
+    pinMode(led_pin, OUTPUT);
+    digitalWrite(led_pin, HIGH);
+    displayWelcome();/* 显示欢迎语，可去除 */
+    display.display(); // actually display all of the above
+
+
+    WiFi.begin(ssid, password, 6);
+    while (WiFiClass::status() != WL_CONNECTED) {
+        delay(100);
+        display.print(".");
+    }
+    display.display(); // actually display all of the above
+
+    char *str;
+    sprintf(str, "IP:%s", WiFi.localIP().toString().c_str());
+    display.println(str);
+    display.display(); // actually display all of the above
+
+    delay(3000);
+    nextJoke();
+
+
+}
+
+void loop() {
+}
+
