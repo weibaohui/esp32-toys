@@ -20,8 +20,11 @@ const String url = "https://v2.jokeapi.dev/joke/Programming";
 
 void display(const char *str) {
     Serial.println(str);
-//    u8f.drawStr(10,10,str);
-    u8f.println(str);
+    tft.fillScreen(TFT_BLACK);
+    tft.setTextSize(4);
+    u8f.setForegroundColor(TFT_WHITE);      // apply color
+    u8f.setFontMode(0);
+    u8f.drawUTF8(10,10,str);
 
 }
 
