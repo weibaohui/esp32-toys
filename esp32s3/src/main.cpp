@@ -21,7 +21,6 @@ const String url = "https://v2.jokeapi.dev/joke/Programming";
 void display(const char *str) {
     Serial.println(str);
     tft.fillScreen(TFT_BLACK);
-    tft.setTextSize(4);
     u8f.setForegroundColor(TFT_WHITE);      // apply color
     u8f.setFontMode(0);
     u8f.drawUTF8(10,10,str);
@@ -75,12 +74,13 @@ void setup() {
     tft.init();
     tft.setRotation(2);
     tft.fillScreen(TFT_BLACK);
+    tft.setTextSize(20);
     tft.begin();
     u8f.begin(tft);                     // connect u8f procedures to TFT_eSPI
 
 
     u8f.setFont(u8g2_font_wqy12_t_gb2312); // icon font
-    u8f.setFontMode(1);
+    u8f.setFontMode(0);
 
     displayWelcome();/* 显示欢迎语，可去除 */
 
