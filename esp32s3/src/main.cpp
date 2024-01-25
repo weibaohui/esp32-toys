@@ -83,6 +83,7 @@ void setup() {
     u8f.setFontMode(0);
 
     displayWelcome();/* 显示欢迎语，可去除 */
+    delay(2000);
 
 
     WiFi.begin(ssid, password, 6);
