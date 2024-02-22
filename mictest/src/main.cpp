@@ -17,9 +17,24 @@ File file;
 const char filename[] = "/recording.wav";
 const int headerSize = 44; // wave header size
 
+#include <SPIFFS.h>
+#include <WiFi.h>
+
+#include "ESP-FTP-Server-Lib.h"
+#include "FTPFilesystem.h"
+
+#define WIFI_SSID "qqqq"
+#define WIFI_PASSWORD "cmcccmcc"
+
+#define FTP_USER "ftp"
+#define FTP_PASSWORD "ftp"
+
+FTPServer ftp;
+
 void loop()
 {
   // put your main code here, to run repeatedly:
+   ftp.handle();
 }
 
 void i2sInit()
@@ -253,5 +268,26 @@ void setup()
   Serial.begin(115200);
   SPIFFSInit();
   i2sInit();
+
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.print("Connected to ");
+  Serial.println(WIFI_SSID);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  ftp.addUser(FTP_USER, FTP_PASSWORD);
+
+  ftp.addFilesystem("SPIFFS", &SPIFFS);
+
+  ftp.begin();
+
+  Serial.println("...---'''---...---'''---...---'''---...");
+
   xTaskCreate(i2s_adc, "i2s_adc", 1024 * 8, NULL, 1, NULL); // 根据需要修改堆栈深度，否则会无限重启....服了
 }
